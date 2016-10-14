@@ -46,7 +46,6 @@ def construct_tiling(N_dim,tile_per_dim,nb_of_tiling,range_per_dim):
 
 
 def find_closest_index(value,tiling):
-                    " Hello world"
     pos=np.searchsorted(tiling,value)
     if pos==0:
         return 0
