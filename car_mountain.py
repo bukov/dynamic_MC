@@ -1,8 +1,12 @@
-'''
-Created on Aug 7, 2016
+"""
+TO-DO-LIST:
 
-@author: robertday
-'''
+1. Return fidelity
+2. Put in variables
+3. Merge first dimension in Theta
+4. Fix initial state
+5. keet track of best-encountered protocol by saving the best_actionss
+"""
 
 import numpy as np
 import numpy.random as random
@@ -84,14 +88,6 @@ global action_set
 action_set=[-1,0,1]
 
 def update_state(current_state,action):
-    
-    '''
-    
-    Return fidelity
-    Put in variables, 
-    
-    '''
-    
     
     terminate=False
     old_pos,old_v=current_state
