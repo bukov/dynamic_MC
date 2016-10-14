@@ -1,6 +1,6 @@
 # dynamic_MC
 
-This is a python 2.7 code for the 'Car Mountain' problem.
+This is a python 2.7 code for the 'Car Mountain' problem, see Sutton and Barto, Chapter 11.
 
 ## Goals:
  * generalise the reinforcement learning state to contain time instead of velocity
