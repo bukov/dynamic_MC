@@ -250,11 +250,11 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
 #===============================================================================
 # TRAINING
 
-Ep=5000
-Theta,_,_,_=Q_learning(nb_episode=Ep,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6)
+Ep=1000
+Theta,_,action_taken,state_taken=Q_learning(nb_episode=Ep,alpha=0.06,eps=0.1,gamma=1.0,lmbda=0.9)
 
 
-Theta,tiling,action_taken,state_taken=Q_learning(nb_episode=1,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6,Theta=Theta)
+#Theta,tiling,action_taken,state_taken=Q_learning(nb_episode=1,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6,Theta=Theta)
 
 fig = plt.figure()
 plt.plot(range(len(action_taken)),action_taken)

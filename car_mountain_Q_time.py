@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 #random.seed(0)
 
 
-state_i = (0.25,0.0) #(-0.523599,0.0)
+state_i = (0.05,0.0) #(-0.523599,0.0)
 
-max_t_steps=10
+max_t_steps=200
 
 xmin, xmax = -1.2, 0.5
 #vmin, vmax = -0.07, 0.07
@@ -117,7 +117,7 @@ def update_state(current_state,action,old_v):
     
     terminate=False
     old_pos,old_time=current_state
-    
+
     # Updating velocity:
     new_velocity=old_v+0.001*action_set[action]-0.0025*np.cos(3.*old_pos)
     
@@ -130,9 +130,9 @@ def update_state(current_state,action,old_v):
         terminate=True
 
     # compute reward
-    R=-0.0
-    if current_state[1]==max_t_steps-1:
-        R += -(xmax - new_pos)
+    R=-1.0
+    #if current_state[1]==max_t_steps-1:
+    #    R += -2*max_t_steps #-(xmax - new_pos)
     
     return (new_pos,old_time+1),terminate,R
  
@@ -171,7 +171,7 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
 
             action_star=np.argmax(Q) #np.random.randint(0,N_actions)
             
-            if random.uniform() < eps: #/(Ep+2.0):
+            if random.uniform() < eps: #/np.log(Ep+2.0):
                 action = random.choice(range(N_actions))
             else:
                 action = action_star
@@ -184,7 +184,9 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
             action_taken.append(action)
 
             if t_step==0:
+                #print current_state_real, new_state_real, action
                 print("Ep,a,Q:", [Ep,action,np.sum(Theta[indTheta,t_step,action]) ])
+            #print('action_taken', action_taken[t_step])
         
 
             delta = R-Q[action]
@@ -208,11 +210,10 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
                 print current_state_real, new_state_real
                 print alpha*delta
             """
+
+            old_v = new_state_real[0]-current_state_real[0]
             current_state_real=new_state_real 
 
-            #print current_state_real  
-            
-            old_v = new_state_real[0]-current_state_real[0] 
             t_step+=1
     
         print("Episode Length:\t",t_step,R)
@@ -231,16 +232,21 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
 #===============================================================================
 # TRAINING
 
-Ep=500
-Theta,_,_,_=Q_learning(nb_episode=Ep,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6)
+Ep=1000
+Theta,_,action_taken2,state_taken2=Q_learning(nb_episode=Ep,alpha=0.06,eps=0.1,gamma=1.0,lmbda=1.0)
+
+#exit()
 
 print('GREEDY')
 
-Theta,tiling,action_taken,state_taken=Q_learning(nb_episode=1,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6,Theta=Theta)
+Theta,tiling,action_taken,state_taken=Q_learning(nb_episode=1,alpha=0.06,eps=0.0,gamma=1.0,lmbda=1.0,Theta=Theta)
 
 fig = plt.figure()
-plt.plot(range(len(action_taken)),action_taken)
-plt.plot(range(len(state_taken)),state_taken)
+#plt.plot(range(len(action_taken)),action_taken)
+#plt.plot(range(len(state_taken)),state_taken)
+
+plt.plot(range(len(action_taken2)),action_taken2)
+plt.plot(range(len(state_taken2)),state_taken2)
 plt.show()
 
 
