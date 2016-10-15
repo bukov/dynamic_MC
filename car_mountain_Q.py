@@ -11,6 +11,7 @@ TO-DO-LIST:
 import numpy as np
 import numpy.random as random
 import pickle
+#random.seed(0)
 
 def construct_tiling(N_dim,tile_per_dim,nb_of_tiling,range_per_dim):
     '''
@@ -166,7 +167,9 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
         #print("Episode",Ep)
         
         trace=np.zeros(Theta.shape,dtype=np.float32)
-        current_state_real=(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
+        current_state_real=(-0.523599,0.0) #(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
+
+        print "Q:", [Ep,select_action(Theta,real_to_tiling((-0.523599,0.0),tiling),0.0)[1]]
         
         indTheta=real_to_tiling(current_state_real,tiling)
         
@@ -204,7 +207,7 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
                 Theta+=alpha*delta*trace
                 break
             
-            new_action,Q_new_action=select_action(Theta,indTheta_new,eps)
+            new_action,Q_new_action=select_action(Theta,indTheta_new,eps/np.log2(Ep+2.0))
             
             delta+=gamma*Q_new_action
             Theta+=alpha*delta*trace
@@ -232,9 +235,9 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
 #===============================================================================
 
 qvalue=[]
-for ep in [10,40,100,150,200,500,1000,2000]:
-    Theta,tiling=Q_learning(nb_episode=ep,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
-    qvalue.append([ep,select_action(Theta,real_to_tiling((-0.523599,0.0),tiling),0.0)[1]])
+for Ep in [2000]:
+    Theta,tiling=Q_learning(nb_episode=Ep,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
+    qvalue.append([Ep,select_action(Theta,real_to_tiling((-0.523599,0.0),tiling),0.0)[1]])
     print(qvalue)
 
 qvalue=np.array(qvalue)
