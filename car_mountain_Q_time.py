@@ -19,10 +19,12 @@ import matplotlib.pyplot as plt
 
 state_i = (0.25,0.0) #(-0.523599,0.0)
 
-xmin, xmax = -1.2, 0.5
-vmin, vmax = -0.07, 0.07
+max_t_steps=10
 
-N_vars=2
+xmin, xmax = -1.2, 0.5
+#vmin, vmax = -0.07, 0.07
+
+N_vars=1
 N_lintiles = 20
 N_tilings = 10
 
@@ -86,20 +88,18 @@ def find_closest_index(value,tiling):
 def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
     dim=0
     ind_state=[]
-    ind=0
-    for s in state_real:
-        tile_begin=0
-        tmp=[]
-        l=len(tiling[dim])
-        for tile in range(l):
-            ind=find_closest_index(s,tiling[dim][tile])+tile_begin
-            tmp.append(ind)
-            tile_begin+=len(tiling[dim][tile])
-        ind_state.append(tmp)
-        dim+=1
-        ind=0
     
-    return(np.append(np.array(ind_state[0]),np.array(ind_state[1])+tile_per_dim*nb_of_tiling))
+    tile_begin=0
+    tmp=[]
+    l=len(tiling[dim])
+    for tile in range(l):
+        ind=find_closest_index(state_real[0],tiling[dim][tile])+tile_begin
+        tmp.append(ind)
+        tile_begin+=len(tiling[dim][tile])
+    ind_state.append(tmp)
+
+    
+    return np.array(ind_state[0])
     #return ind_state
 
 #tiling=construct_tiling(2,[4,4],3,[[-1,1],[3,4]])
@@ -113,56 +113,29 @@ def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
 #===============================================================================
 
 
-def update_state(current_state,action):
+def update_state(current_state,action,old_v):
     
     terminate=False
-    old_pos,old_v=current_state
+    old_pos,old_time=current_state
     
     # Updating velocity:
     new_velocity=old_v+0.001*action_set[action]-0.0025*np.cos(3.*old_pos)
-    
-    # Maximum velocity ! (presence of friction)
-    if new_velocity < vmin:
-        new_velocity=vmin
-    elif new_velocity > vmax:
-        new_velocity=vmax
     
     # Updating position:
     new_pos=old_pos+new_velocity
     
     if new_pos < xmin:
         new_pos=xmin
-        new_velocity=0.0
     elif new_pos > xmax:
         terminate=True
 
     # compute reward
-    R = -1.0
+    R=-0.0
+    if current_state[1]==max_t_steps-1:
+        R += -(xmax - new_pos)
     
-    return (new_pos,new_velocity),terminate,R
+    return (new_pos,old_time+1),terminate,R
  
- 
-def select_action(Theta,indTheta,eps):
-    ''' 
-     epsilon-greedy function for selecting action
-     Q is the state action value function
-     indTheta are the non-zero feature for the current state
-     eps is the exploration rate
-    '''
-    if random.uniform() < eps:
-        #Explore
-        new_action=random.randint(0,N_actions)
-        
-    else: 
-        #Greedy
-        new_action=np.argmax(np.sum(Theta[indTheta,:], axis=0))
-        
-    Q_new_action=np.sum(Theta[indTheta,new_action])
-
-    return new_action,Q_new_action
-    
-        
-
   
 def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None):
     ''' Q_learning
@@ -172,9 +145,9 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
     lmbda is the trace decay rate    
      '''
 
-    tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
+    tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax]])
     if Theta is None:
-        Theta=np.zeros((N_vars*N_lintiles*N_tilings,N_actions),dtype=np.float32)
+        Theta=np.zeros((N_vars*N_lintiles*N_tilings,max_t_steps,N_actions),dtype=np.float32)
     else:
         eps=0.0
     
@@ -186,14 +159,15 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
         trace=np.zeros(Theta.shape,dtype=np.float32)
         current_state_real=state_i
 
-        
-        i=0
+        old_v=0.0
+
+        t_step=0
         while True:
             
             state_taken.append(current_state_real[0])
 
             indTheta=real_to_tiling(current_state_real,tiling,N_lintiles,N_tilings)
-            Q=np.sum(Theta[indTheta,:],axis=0)
+            Q=np.sum(Theta[indTheta,t_step,:],axis=0)
 
             action_star=np.argmax(Q) #np.random.randint(0,N_actions)
             
@@ -205,36 +179,43 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
             if action != action_star:
                 trace *= 0.0
 
-            if i==0:
-                print("Q:", [Ep,action,np.sum(Theta[indTheta,action]) ])
-        
-
             # Take action
-            new_state_real,terminate,R=update_state(current_state_real,action)
+            new_state_real,terminate,R=update_state(current_state_real,action,old_v)
             action_taken.append(action)
 
+            if t_step==0:
+                print("Ep,a,Q:", [Ep,action,np.sum(Theta[indTheta,t_step,action]) ])
+        
 
             delta = R-Q[action]
             
-            trace[indTheta,action]=1. # use replacing traces !
+            trace[indTheta,t_step,action]=1.0 # use replacing traces !
             
             # Terminate here
-            if terminate:
+            if terminate or t_step==max_t_steps-1:
                 Theta+=alpha*delta*trace
                 break
 
             indTheta_new=real_to_tiling(new_state_real,tiling,N_lintiles,N_tilings)
-            Q=np.sum(Theta[indTheta_new,:],axis=0)
+            Q=np.sum(Theta[indTheta_new,t_step+1,:],axis=0)
             
             delta+=gamma*max(Q)
             Theta+=alpha*delta*trace
             trace*=gamma*lmbda
+
+            """
+            if user_input=='y':
+                print current_state_real, new_state_real
+                print alpha*delta
+            """
+            current_state_real=new_state_real 
+
+            #print current_state_real  
             
-            current_state_real=new_state_real   
-            
-            i+=1
+            old_v = new_state_real[0]-current_state_real[0] 
+            t_step+=1
     
-        print("Episode Length:\t",i)
+        print("Episode Length:\t",t_step,R)
         #print(Theta)
     
     #print(Theta)
@@ -250,9 +231,10 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9,Theta=None)
 #===============================================================================
 # TRAINING
 
-Ep=5000
+Ep=500
 Theta,_,_,_=Q_learning(nb_episode=Ep,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6)
 
+print('GREEDY')
 
 Theta,tiling,action_taken,state_taken=Q_learning(nb_episode=1,alpha=0.06,eps=0.0,gamma=1.0,lmbda=0.6,Theta=Theta)
 
