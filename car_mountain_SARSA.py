@@ -1,7 +1,6 @@
 """
 TO-DO-LIST:
 
-
 3. Merge first dimension in Theta
 5. keet track of best-encountered protocol by saving the best_actionss
 """
@@ -11,6 +10,8 @@ import numpy.random as random
 import pickle
 #random.seed(0)
 
+
+state_i = (0.3,0.0) #(-0.523599,0.0)
 
 xmin, xmax = -1.2, 0.5
 vmin, vmax = -0.07, 0.07
@@ -106,18 +107,18 @@ def update_state(current_state,action):
     new_velocity=old_v+0.001*action_set[action]-0.0025*np.cos(3.*old_pos)
     
     # Maximum velocity ! (presence of friction)
-    if new_velocity < -0.07:
-        new_velocity=-0.07
-    elif new_velocity > 0.07:
-        new_velocity=0.07
+    if new_velocity < vmin:
+        new_velocity=vmin
+    elif new_velocity > vmax:
+        new_velocity=vmax
     
     # Updating position:
     new_pos=old_pos+new_velocity
     
-    if new_pos < -1.2:
-        new_pos=-1.2
+    if new_pos < xmin:
+        new_pos=xmax
         new_velocity=0.0
-    elif new_pos > 0.5:
+    elif new_pos > xmax:
         terminate=True
 
     # compute reward
@@ -135,11 +136,11 @@ def select_action(Theta,indTheta,eps):
     '''
     if random.uniform() < eps:
         #Explore
-        new_action=random.randint(0,3)
+        new_action=random.randint(0,N_actions)
         
     else: 
         #Greedy
-        set_action=np.array([compute_Q(Theta,indTheta,a) for a in range(3)])
+        set_action=np.array([compute_Q(Theta,indTheta,a) for a in range(N_actions)])
         new_action=np.argmax(set_action)
         #print(set_action,new_action)
         
@@ -178,13 +179,13 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
         #print("Episode",Ep)
         
         trace=np.zeros(Theta.shape,dtype=np.float32)
-        current_state_real=(-0.523599,0.0) #(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
+        current_state_real=state_i #(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
 
-        print "Q:", [Ep,select_action(Theta,real_to_tiling((-0.523599,0.0),tiling),0.0)[1]]
+        print "Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling),0.0)[1]]
         
         indTheta=real_to_tiling(current_state_real,tiling)
         
-        action=np.random.randint(0,N_actions)
+        action=0 #np.random.randint(0,N_actions)
         #print("trace\t",trace)
         #print("current_state_real\t",current_state_real)
         #print("indTheta\t",indTheta)
@@ -264,11 +265,11 @@ pkl_file = open('res1000.pkl', 'rb')
 t1,til1 = pickle.load(pkl_file)
 
 data=[]
-dx=(0.5+1.2)/50
-dv=(0.14)/50
+dx=(xmax-xmin)/50.0
+dv=(vmax-vmin)/50.0
 
-for x in np.arange(-1.2,0.5,dx):
-    for v in np.arange(-0.07,0.07,dv):
+for x in np.arange(xmin,xmax,dx):
+    for v in np.arange(vmin,vmax,dv):
         data.append([x,v,select_action(t1,real_to_tiling((x,v),til1),0.0)[1]])
 
 data=np.array(data)
