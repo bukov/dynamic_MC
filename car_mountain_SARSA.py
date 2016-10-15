@@ -2,6 +2,7 @@
 TO-DO-LIST:
 
 3. Merge first dimension in Theta
+4. see the motion of the car
 5. keet track of best-encountered protocol by saving the best_actionss
 """
 
@@ -60,6 +61,9 @@ def construct_tiling(N_dim,tile_per_dim,nb_of_tiling,range_per_dim):
     return all_tiling2
 
 
+#print(construct_tiling(2,[4,4],3,[[-1,1],[3,4]]))
+#exit()
+
 def find_closest_index(value,tiling):
     pos=np.searchsorted(tiling,value)
     if pos==0:
@@ -69,7 +73,8 @@ def find_closest_index(value,tiling):
     else:
         return pos-1+np.argmin([abs(tiling[pos-1]-value),abs(tiling[pos]-value)])
 
-def real_to_tiling(state_real,tiling):
+
+def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
     dim=0
     ind_state=[]
     ind=0
@@ -84,8 +89,13 @@ def real_to_tiling(state_real,tiling):
         ind_state.append(tmp)
         dim+=1
         ind=0
-    return ind_state
+    
+    return(np.append(np.array(ind_state[0]),np.array(ind_state[1])+tile_per_dim*nb_of_tiling))
+    #return ind_state
 
+#tiling=construct_tiling(2,[4,4],3,[[-1,1],[3,4]])
+#print(real_to_tiling((-0.2,0.01),tiling,4,3))
+#exit()
 #===============================================================================
 # tiling=construct_tiling(2,[3,3],10,[[-1.2,0.5],[-0.07,0.07]])
 # print(tiling)
@@ -140,22 +150,15 @@ def select_action(Theta,indTheta,eps):
         
     else: 
         #Greedy
-        set_action=np.array([compute_Q(Theta,indTheta,a) for a in range(N_actions)])
+        set_action=np.array([np.sum(Theta[indTheta,a]) for a in range(N_actions)])
         new_action=np.argmax(set_action)
         #print(set_action,new_action)
         
-    Q_new_action=compute_Q(Theta,indTheta,new_action)
-    
+    Q_new_action=np.sum(Theta[indTheta,new_action])
+
     return new_action,Q_new_action
     
         
-def compute_Q(Theta,indTheta,action):
-    '''
-    Can concatenate dimensions too ... just add 100 to second dimension 
-    '''
-    
-    val=np.sum(Theta[0,indTheta[0],action])
-    return val+np.sum(Theta[1,indTheta[1],action])
 
   
 def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
@@ -167,7 +170,7 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
      '''
     
     tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
-    Theta=np.zeros((N_vars,N_lintiles*N_tilings,N_actions),dtype=np.float32)
+    Theta=np.zeros((N_vars*N_lintiles*N_tilings,N_actions),dtype=np.float32)
     
     #print("Tiling\n",tiling)
     #print("Tiling,shape:\t",np.shape(tiling))
@@ -181,9 +184,9 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
         trace=np.zeros(Theta.shape,dtype=np.float32)
         current_state_real=state_i #(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
 
-        print "Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling),0.0)[1]]
+        print("Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling,N_lintiles,N_tilings),0.0)[1]])
         
-        indTheta=real_to_tiling(current_state_real,tiling)
+        indTheta=real_to_tiling(current_state_real,tiling,N_lintiles,N_tilings)
         
         action=0 #np.random.randint(0,N_actions)
         #print("trace\t",trace)
@@ -197,8 +200,7 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
             #if(i>5): break
             
             ### UNWRAP this a bit .... divergence.
-            trace[0,indTheta[0],action]=1. # use replacing traces !
-            trace[1,indTheta[1],action]=1.
+            trace[indTheta,action]=1. # use replacing traces !
             #print("TRACE:\n",trace) 
             #if (i+1)%1000==0: print(i)#"\t",current_state_real)
             #if i>100: break
@@ -208,8 +210,8 @@ def Q_learning(nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
             new_state_real,terminate,R=update_state(current_state_real,action)
             #print("new_state_real\t",new_state_real)
         
-            indTheta_new=real_to_tiling(new_state_real,tiling)
-            Q=compute_Q(Theta,indTheta,action)
+            indTheta_new=real_to_tiling(new_state_real,tiling,N_lintiles,N_tilings)
+            Q=np.sum(Theta[indTheta,action])
             #print("Q estimate:\t",Q)
             
             delta=R-Q
