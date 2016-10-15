@@ -126,7 +126,7 @@ def update_state(current_state,action):
     new_pos=old_pos+new_velocity
     
     if new_pos < xmin:
-        new_pos=xmax
+        new_pos=xmin
         new_velocity=0.0
     elif new_pos > xmax:
         terminate=True
