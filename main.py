@@ -13,8 +13,8 @@ N_lintiles = 9
 N_tilings = 10
 N_actions = 3
 
-nb_episode=428
-alpha=0.05
+nb_episode=10000
+alpha=0.5
 eps=0.0
 gamma=1.0
 lmbda=0.9
@@ -37,8 +37,10 @@ params["action_set"]=action_set
 params["state_i"]=state_i
       
 
-Theta,tiling=Q_learning(params)
-print(tiling)
+#Theta,tiling=Q_learning(params)
+Q,tiling=Q_learning_v2(params)
+print(Q)
+#print(tiling)
 # Saving data
-pkl_file=open('data/SARSA428.pkl','wb')
-pickle.dump([Theta,tiling],pkl_file)
+pkl_file=open('data/SARSAv2_2000.pkl','wb')
+pickle.dump([Q,tiling],pkl_file)

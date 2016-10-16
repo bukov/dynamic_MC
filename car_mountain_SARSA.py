@@ -74,7 +74,7 @@ def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
         ind=0
     
     return(np.append(np.array(ind_state[0]),np.array(ind_state[1])+tile_per_dim*nb_of_tiling))
-
+        
 
 def update_state(current_state,action):
     
@@ -103,7 +103,37 @@ def update_state(current_state,action):
     R = -1.0
     
     return (new_pos,new_velocity),terminate,R
- 
+
+
+
+def compute_trajectory(state_i,Theta,tiling):
+    state=state_i
+    tile_per_dim,nb_of_tiling=np.shape(tiling[0])
+    trajectory=[]
+    max_it=1000
+    it=0
+    global xmin,xmax,vmin,vmax,N_actions
+    xmin=-1.2
+    xmax=0.5
+    vmin=-0.07
+    vmax=0.07
+    N_actions=3
+    
+    
+    while True:
+        indTheta=real_to_tiling(state,tiling,tile_per_dim,nb_of_tiling)
+        Q=np.sum(Theta[indTheta,:],axis=0)
+        action=np.argmax(Q)
+        
+        
+        trajectory.append([state[0],state[1],action,np.max(Q)])
+        new_state,terminate,_=update_state(state,action)
+        if terminate: break
+        state=new_state
+        it+=1
+        if it>max_it: break
+    
+    return trajectory
  
 def select_action(Theta,indTheta,eps):
     ''' 
@@ -158,39 +188,22 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
     Theta=np.zeros((N_vars*N_lintiles*N_tilings,N_actions),dtype=np.float32)
     
-    #print("Tiling\n",tiling)
-    #print("Tiling,shape:\t",np.shape(tiling))
-    #print("Theta, shape:\t",np.shape(Theta))
-    #theta=np.empty((2,100),dtype=np.int8) 
-    
     #indTheta=real_to_tiling(init_state_real,tiling)
     for Ep in range(nb_episode):
         #print("Episode",Ep)
         trace=np.zeros(Theta.shape,dtype=np.float32)
-        current_state_real=state_i #(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
+        current_state_real=(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
 
         #print("Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling,N_lintiles,N_tilings),0.0)[1]])
         
         indTheta=real_to_tiling(current_state_real,tiling,N_lintiles,N_tilings)
         
-        action=0 #np.random.randint(0,N_actions)
-        #print("trace\t",trace)
-        #print("current_state_real\t",current_state_real)
-        #print("indTheta\t",indTheta)
-        #print("action\t",action)
+        action=np.random.randint(0,N_actions)
         
         i=0
         while True:
-            #print("ITERATION NO:\t",i)
-            #if(i>5): break
-            
-            ### UNWRAP this a bit .... divergence.
             trace[indTheta,action]=1. # use replacing traces !
-            #print("TRACE:\n",trace) 
-            #if (i+1)%1000==0: print(i)#"\t",current_state_real)
-            #if i>100: break
-            #i+=1
-            
+
             # Take action
             new_state_real,terminate,R=update_state(current_state_real,action)
             #print("new_state_real\t",new_state_real)
@@ -206,7 +219,7 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
                 Theta+=alpha*delta*trace
                 break
             
-            new_action,Q_new_action=select_action(Theta,indTheta_new,eps/np.log2(Ep+2.0))
+            new_action,Q_new_action=select_action(Theta,indTheta_new,eps)
             
             delta+=gamma*Q_new_action
             Theta+=alpha*delta*trace
@@ -224,6 +237,113 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
             print("Episode:",Ep," Length:",i)
     #print(Theta)
     return Theta,tiling
+
+
+# Used only for Q_learning_v2
+def real_to_discrete(state,tiling):
+    tx,tv=tiling
+    x,v=state
+    return np.argmin(abs(tx-x)),np.argmin(abs(tv-v))
+
+def Q_learning_v2(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
+    ''' SARSA with look up table
+    alpha is the learning rate (for gradient descent)
+    eps is the exploration rate
+    gamma is the discount factor
+    lmbda is the trace decay rate    
+     '''
+    
+    nb_episode=params['nb_episode']
+    alpha=params['alpha']
+    eps=params['eps']
+    gamma=params['gamma']
+    lmbda=params['lmbda']
+    global xmin,xmax,vmin,vmax,N_actions
+    xmin=params['xmin']
+    xmax=params['xmax']
+    vmin=params['vmin']
+    vmax=params['vmax']
+    N_vars=params['N_vars']
+    N_lintiles=params['N_lintiles']
+    N_tilings=params['N_tilings']
+    N_actions=params['N_actions']
+    state_i=params['state_i']
+    action_set=params['action_set']
+    
+    
+    #tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
+    Qtable=np.zeros((100,100,3),dtype=np.float32)
+    tiling=(np.linspace(-1.2,0.5,100),np.linspace(-0.07,0.07,100))
+    
+    #indTheta=real_to_tiling(init_state_real,tiling)
+    for Ep in range(nb_episode):
+        #print("Episode",Ep)
+        trace=np.zeros(Qtable.shape,dtype=np.float32)
+        current_state_real=(random.uniform(-1.2,0.5),random.uniform(-0.07,0.07))
+        action=np.random.randint(0,N_actions)
+        indQ=real_to_discrete(current_state_real,tiling)
+        
+        #=======================================================================
+        # print(current_state_real)
+        # print(action)
+        # print(indQ)
+        # 
+        # exit()
+        #=======================================================================
+        
+        #print("Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling,N_lintiles,N_tilings),0.0)[1]])
+        
+        #indTheta=real_to_tiling(current_state_real,tiling,N_lintiles,N_tilings)
+        
+        
+        i=0
+       # print("initial state",current_state_real," ",indQ)
+       # print("initial action",action)
+        while True:
+            trace[indQ[0],indQ[1],action]=1. # use replacing traces !
+        
+            #print("Q estimate:\t",Q)
+    
+            # Take action
+            new_state_real,terminate,R=update_state(current_state_real,action)
+            
+            delta=R-Qtable[indQ[0],indQ[1],action]
+            #print("new_state_real\t",new_state_real)
+        
+            indQ_new=real_to_discrete(new_state_real,tiling)
+            
+            # Terminate here
+            if terminate:
+                Qtable+=alpha*delta*trace
+                break
+            if i>500:
+                Qtable+=alpha*delta*trace
+                break
+            
+            if np.random.uniform() < eps:
+                new_action=np.random.randint(0,N_actions)
+            else:
+                new_action=np.argmax(Qtable[indQ_new[0],indQ_new[1],:])
+            
+            
+            Q_new=Qtable[indQ_new[0],indQ_new[1],new_action]
+            
+            delta+=gamma*Q_new
+            Qtable+=alpha*delta*trace
+            trace*=gamma*lmbda
+            
+            current_state_real=new_state_real
+            indQ=indQ_new   
+            action=new_action
+            
+            i+=1
+    
+        #print("Episode Length:\t",i)
+        #print(Theta)
+        if Ep%10 ==0 :
+            print("Episode:",Ep," Length:",i)
+    #print(Theta)
+    return Qtable,tiling
 #===============================================================================
 # random.seed(10)       
 # Theta,tiling=Q_learning(nb_episode=9000,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
