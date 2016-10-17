@@ -6,7 +6,7 @@
 *.so
 
 #eclipse files
-*.pyproject
+*.pydevproject
 *.DS_Store 
 *.project
 
