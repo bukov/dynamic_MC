@@ -22,30 +22,18 @@ def construct_tiling(N_dim,tile_per_dim,nb_of_tiling,range_per_dim):
     Returns a nb_of_tiling dimensional list of N_dim dimensional list. Each of the latter list is a N_dim dimensional list
     of numpy arrays representing the centers of the tiling along the various dimensions
     '''
-
-    all_tiling=[]    
-    for i in range(nb_of_tiling):
-    
-        tiling_centers=[]
-    
-        for d in range(N_dim):
-            d1=(range_per_dim[d][1]-range_per_dim[d][0])/tile_per_dim[d]
-            tiling_centers_dim1=np.arange(range_per_dim[d][0],range_per_dim[d][1],d1)+d1/2
-            tiling_centers_dim1+=(np.random.rand()*d1-d1*0.5)
-            tiling_centers.append(tiling_centers_dim1)
-        all_tiling.append(tiling_centers)
-    
-    all_tiling2=[]
-    
+    tiling=[]
     for d in range(N_dim):
-        tmp=np.zeros((nb_of_tiling,tile_per_dim[d]))
-        for i in range(nb_of_tiling):
-            tmp[i]=all_tiling[i][d]
-        all_tiling2.append(tmp)
-    
-    
-    # Returned object : first index is dimension, second index is tiling
-    return all_tiling2
+        tilings_dim=[]
+        for nth_tiling in range(nb_of_tiling):
+            #tiling_tmp=np.linspace(range_per_dim[d][0],range_per_dim[d][1],tile_per_dim[d])
+            tilings_dim.append(np.linspace(range_per_dim[d][0],range_per_dim[d][1],tile_per_dim[d]))
+            delta=(range_per_dim[d][1]-range_per_dim[d][0])/tile_per_dim[d]
+            random_shift=np.random.uniform(-delta/2.,delta/2.)
+            tilings_dim[-1]+=random_shift
+        tiling.append(tilings_dim)
+        
+    return tiling
 
 def find_closest_index(value,tiling):
     pos=np.searchsorted(tiling,value)
@@ -58,23 +46,28 @@ def find_closest_index(value,tiling):
 
 
 def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
-    dim=0
-    ind_state=[]
-    ind=0
-    for s in state_real:
-        tile_begin=0
-        tmp=[]
-        l=len(tiling[dim])
-        for tile in range(l):
-            ind=find_closest_index(s,tiling[dim][tile])+tile_begin
-            tmp.append(ind)
-            tile_begin+=len(tiling[dim][tile])
-        ind_state.append(tmp)
-        dim+=1
-        ind=0
+    # This should be optimized !
     
-    return(np.append(np.array(ind_state[0]),np.array(ind_state[1])+tile_per_dim*nb_of_tiling))
+    n_dim=np.shape(state_real)[0]
+
+    indTheta=[]
+    current_pos=0
+    for tile in range(nb_of_tiling):
+        coordinate=[]
+        for dim in range(n_dim):
+            index=find_closest_index(state_real[dim],tiling[dim][tile])
+            coordinate.append(index)
         
+        pos=0
+        i=0
+        for c in coordinate:
+            pos+=c*pow(tile_per_dim[dim],i)
+            i+=1    
+        
+        indTheta.append(pos+current_pos)
+        current_pos+=np.prod(tile_per_dim)
+    return np.array(indTheta)
+
 
 def update_state(current_state,action):
     
@@ -121,10 +114,9 @@ def compute_trajectory(state_i,Theta,tiling):
     
     
     while True:
-        indTheta=real_to_tiling(state,tiling,tile_per_dim,nb_of_tiling)
+        indTheta=real_to_tiling(state,tiling,[tile_per_dim,tile_per_dim],nb_of_tiling)
         Q=np.sum(Theta[indTheta,:],axis=0)
         action=np.argmax(Q)
-        
         
         trajectory.append([state[0],state[1],action,np.max(Q)])
         new_state,terminate,_=update_state(state,action)
@@ -186,7 +178,7 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     
     
     tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
-    Theta=np.zeros((N_vars*N_lintiles*N_tilings,N_actions),dtype=np.float32)
+    Theta=np.zeros((N_lintiles*N_lintiles*N_tilings,N_actions),dtype=np.float32)
     
     #indTheta=real_to_tiling(init_state_real,tiling)
     for Ep in range(nb_episode):
@@ -196,7 +188,7 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
 
         #print("Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling,N_lintiles,N_tilings),0.0)[1]])
         
-        indTheta=real_to_tiling(current_state_real,tiling,N_lintiles,N_tilings)
+        indTheta=real_to_tiling(current_state_real,tiling,[N_lintiles,N_lintiles],N_tilings)
         
         action=np.random.randint(0,N_actions)
         
@@ -208,7 +200,7 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
             new_state_real,terminate,R=update_state(current_state_real,action)
             #print("new_state_real\t",new_state_real)
         
-            indTheta_new=real_to_tiling(new_state_real,tiling,N_lintiles,N_tilings)
+            indTheta_new=real_to_tiling(new_state_real,tiling,[N_lintiles,N_lintiles],N_tilings)
             Q=np.sum(Theta[indTheta,action])
             #print("Q estimate:\t",Q)
             
@@ -222,6 +214,7 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
             new_action,Q_new_action=select_action(Theta,indTheta_new,eps)
             
             delta+=gamma*Q_new_action
+            #print(alpha,delta,trace)
             Theta+=alpha*delta*trace
             trace*=gamma*lmbda
             
@@ -244,6 +237,28 @@ def real_to_discrete(state,tiling):
     tx,tv=tiling
     x,v=state
     return np.argmin(abs(tx-x)),np.argmin(abs(tv-v))
+
+# Compute trajectory with a look-up table
+def compute_trajectory_LT(state_i,Qtable,tiling):
+    
+    global vmin,vmax,xmin,xmax
+    vmin=-0.07
+    vmax=0.07
+    xmin=-1.2
+    xmax=0.5
+    state=state_i
+    trajectory=[]
+    while True:
+         indQ=real_to_discrete(state,tiling)
+         action=np.argmax(Qtable[indQ[0],indQ[1],:])
+         Qvalue=Qtable[indQ[0],indQ[1],action]
+         trajectory.append([state[0],state[1],action,Qvalue])
+         
+         state,terminate,_=update_state(state,action)
+         if terminate:
+             break
+    
+    return trajectory    
 
 def Q_learning_v2(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     ''' SARSA with look up table
