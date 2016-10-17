@@ -7,7 +7,7 @@
 
 #eclipse files
 *.pyproject
-*.DS_Store
+*.DS_Store 
 
 
 # pure fortran source files #

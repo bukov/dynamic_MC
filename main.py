@@ -37,13 +37,11 @@ params["vmax"]=vmax
 params["action_set"]=action_set
 params["state_i"]=state_i
       
-#===============================================================================
-# 
-# Theta,tiling=Q_learning(params)
-# pkl_file=open('data/SARSA_1000.pkl','wb')
-# pickle.dump([Theta,tiling],pkl_file)
-# exit()
-#===============================================================================
+ 
+Theta,tiling=Q_learning(params)
+pkl_file=open('data/SARSA_1000.pkl','wb')
+pickle.dump([Theta,tiling],pkl_file)
+exit()
 
 #===============================================================================
 # Theta,tiling=Q_learning_t(params)
