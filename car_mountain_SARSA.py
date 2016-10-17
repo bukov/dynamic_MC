@@ -1,11 +1,3 @@
-"""
-TO-DO-LIST:
-
-3. Merge first dimension in Theta
-4. see the motion of the car
-5. keet track of best-encountered protocol by saving the best_actionss
-"""
-
 import numpy as np
 import numpy.random as random
 #random.seed(0)
