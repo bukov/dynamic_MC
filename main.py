@@ -16,9 +16,9 @@ N_actions = 3
 
 nb_episode=1000
 alpha=0.05
-eps=0.1
+eps=0.0
 gamma=1.0
-lmbda=0.9
+lmbda=0.0
 
 params={}
 params["nb_episode"]=nb_episode
@@ -37,27 +37,47 @@ params["vmax"]=vmax
 params["action_set"]=action_set
 params["state_i"]=state_i
       
-
 #===============================================================================
+# 
 # Theta,tiling=Q_learning(params)
 # pkl_file=open('data/SARSA_1000.pkl','wb')
 # pickle.dump([Theta,tiling],pkl_file)
 # exit()
 #===============================================================================
 
-#Q,tiling=Q_learning_v2(params)
-#print(Q)
-#print(tiling)
-# Saving data
 #===============================================================================
-# N_lintiles = 9
-# N_tilings = 10
+# Theta,tiling=Q_learning_t(params)
+# pkl_file=open('data/SARSA_t_1000.pkl','wb')
+# pickle.dump([Theta,tiling],pkl_file)
+#  
+#  
+#  
+# exit()
 #===============================================================================
-pkl_file=open('data/SARSA_1000.pkl','rb')
-#pickle.dump([Theta,tiling],pkl_file)
-Theta,tiling=pickle.load(pkl_file)
+
+#===============================================================================
+#  Theta,tiling=Q_learning_t(params)
+#  pkl_file=open('data/SARSA_t_1000.pkl','wb')
+#  pickle.dump([Theta,tiling],pkl_file)
+#  exit(0)
+# Q,tiling=Q_learning_v2(params)
+# print(Q)
+# print(tiling)
+#  Saving data
+#  N_lintiles = 9
+#  N_tilings = 10
+#===============================================================================
+
+#===============================================================================
+# 
+# pkl_file=open('data/SARSA_t_1000.pkl','rb')
+# #pickle.dump([Theta,tiling],pkl_file)
+# Theta,tiling=pickle.load(pkl_file)
+# plot_trajectory_time(Theta,tiling)
+#===============================================================================
+
 #Theta,tiling=pickle.load(pkl_file)
-plot_surface_action_max(Theta,tiling,(-1.2,0.5,0.03),(-0.07,0.07,0.004),N_lintiles,N_tilings)
+#plot_surface_action_max(Theta,tiling,(-1.2,0.5,0.03),(-0.07,0.07,0.004),N_lintiles,N_tilings)
 
 exit()
 #exit()

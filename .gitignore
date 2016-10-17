@@ -5,6 +5,11 @@
 # cpp libraries
 *.so
 
+#eclipse files
+*.pyproject
+*.DS_Store
+
+
 # pure fortran source files #
 *.f90
 

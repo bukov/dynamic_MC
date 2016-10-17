@@ -52,8 +52,6 @@ def plot_surface_action_max_LT(Qtable,tiling,rangex,rangev):
     ax.plot_trisurf(data[:,0], data[:,1], abs(data[:,2]), linewidth=0.2,cmap=cm.jet)
 
     plt.show()
-    
-
         
 def plot_trajectory(trajectory):
     fig=plt.figure()
@@ -64,7 +62,18 @@ def plot_trajectory(trajectory):
     plt.show()
     
     
-
+def plot_trajectory_time(Theta,tiling):
+    trajectory=np.array(compute_trajectory_T((0.3,0.,0),Theta,tiling))
+    #print(trajectory)
+    fig=plt.figure()
+    ax1=fig.add_subplot(111)
+    ax1.scatter(range(np.shape(trajectory)[0]),trajectory[:,0], s=10, c='b', marker="s", label='Position')
+    ax1.scatter(range(np.shape(trajectory)[0]),trajectory[:,2], s=10, c='r', marker="s", label='Action')
+    plt.legend(loc='upper left');
+    plt.show()
+    
+    
+    
 #===============================================================================
 # xmin, xmax = -1.2, 0.5
 # vmin, vmax = -0.07, 0.07

@@ -139,8 +139,7 @@ def select_action(Theta,indTheta,eps):
     Q_new_action=np.sum(Theta[indTheta,new_action])
 
     return new_action,Q_new_action
-    
-        
+            
 #print("voila")
   
 def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
@@ -351,6 +350,179 @@ def Q_learning_v2(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
             print("Episode:",Ep," Length:",i)
     #print(Theta)
     return Qtable,tiling
+
+def real_to_tiling_time(state_real,tiling,tile_per_dim,nb_of_tiling):
+    # This should be optimized !
+    
+    n_dim=1
+    time=state_real[2]
+    #print(time)
+
+    indTheta=[]
+    current_pos=0
+    for tile in range(nb_of_tiling):
+        coordinate=[]
+        for dim in range(n_dim):
+            index=find_closest_index(state_real[dim],tiling[dim][tile])
+            coordinate.append(index)
+        
+        pos=0
+        i=0
+        for c in coordinate:
+            pos+=c*pow(tile_per_dim[dim],i)
+            i+=1    
+        
+        indTheta.append(pos+current_pos)
+        current_pos+=np.prod(tile_per_dim)
+    return np.array(indTheta)+time*tile_per_dim[0]*nb_of_tiling
+
+def update_state_t(current_state,action):
+    
+    terminate=False
+    old_pos,old_v,old_t=current_state
+    
+    # Updating velocity:
+    new_velocity=old_v+0.001*(action-1)-0.0025*np.cos(3.*old_pos)
+    
+    # Maximum velocity ! (presence of friction)
+    if new_velocity < vmin:
+        new_velocity=vmin
+    elif new_velocity > vmax:
+        new_velocity=vmax
+    
+    # Updating position:
+    new_pos=old_pos+new_velocity
+    
+    if new_pos < xmin:
+        new_pos=xmin
+        new_velocity=0.0
+    elif new_pos > xmax:
+        terminate=True
+
+    # compute reward
+    R = -1.0
+    
+    return (new_pos,new_velocity,old_t+1),terminate,R
+
+
+def compute_trajectory_T(state_i,Theta,tiling):
+    state=state_i
+    tile_per_dim,nb_of_tiling=np.shape(tiling[0])
+    trajectory=[]
+    max_it=1000
+    it=0
+    global xmin,xmax,vmin,vmax,N_actions
+    xmin=-1.2
+    xmax=0.5
+    vmin=-0.07
+    vmax=0.07
+    N_actions=3
+    
+    
+    while True:
+        indTheta=real_to_tiling_time(state,tiling,[tile_per_dim],nb_of_tiling)
+        Q=np.sum(Theta[indTheta,:],axis=0)
+        action=np.argmax(Q)
+        
+        trajectory.append([state[0],state[1],action,np.max(Q)])
+        new_state,terminate,_=update_state_t(state,action)
+        if terminate: break
+        state=new_state
+        it+=1
+        if it>max_it: break
+    
+    return trajectory
+
+
+def Q_learning_t(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
+    ''' SARSA
+    alpha is the learning rate (for gradient descent)
+    eps is the exploration rate
+    gamma is the discount factor
+    lmbda is the trace decay rate    
+     '''
+    
+    nb_episode=params['nb_episode']
+    alpha=params['alpha']
+    eps=params['eps']
+    gamma=params['gamma']
+    lmbda=params['lmbda']
+    global xmin,xmax,vmin,vmax,N_actions
+    xmin=params['xmin']
+    xmax=params['xmax']
+    vmin=params['vmin']
+    vmax=params['vmax']
+    N_vars=params['N_vars']
+    N_lintiles=params['N_lintiles']
+    N_tilings=params['N_tilings']
+    N_actions=params['N_actions']
+    state_i=params['state_i']
+    action_set=params['action_set']
+    N_time=200
+    
+    tiling=construct_tiling(1,[N_lintiles],N_tilings,[[xmin,xmax]])
+    Theta=np.zeros((N_lintiles*N_time*N_tilings,N_actions),dtype=np.float32)
+    #time=0
+    #indTheta=real_to_tiling(init_state_real,tiling)
+    for Ep in range(nb_episode):
+        time=0
+        #print("Episode",Ep)
+        trace=np.zeros(Theta.shape,dtype=np.float32)
+        current_state_real=(0.3,0.,0)
+
+        #print("Q:", [Ep,select_action(Theta,real_to_tiling(state_i,tiling,N_lintiles,N_tilings),0.0)[1]])
+        
+        indTheta=real_to_tiling_time(current_state_real,tiling,[N_lintiles],N_tilings)
+        #print(indTheta)
+        
+        action=np.random.randint(0,N_actions)
+        
+        i=0
+        while True:
+            if time > 198:
+                break
+            trace[indTheta,action]=1. # use replacing traces !
+
+            # Take action
+            new_state_real,terminate,R=update_state_t(current_state_real,action)
+            #print("new_state_real\t",new_state_real)
+        
+            indTheta_new=real_to_tiling_time(new_state_real,tiling,[N_lintiles],N_tilings)
+            Q=np.sum(Theta[indTheta,action])
+            #print("Q estimate:\t",Q)
+            
+            delta=R-Q
+            
+            # Terminate here
+            if terminate:
+                Theta+=alpha*delta*trace
+                break
+            
+            new_action,Q_new_action=select_action(Theta,indTheta_new,eps)
+            
+            delta+=gamma*Q_new_action
+            #print(alpha,delta,trace)
+            Theta+=alpha*delta*trace
+            trace*=gamma*lmbda
+            
+            current_state_real=new_state_real   
+            indTheta=indTheta_new
+            action=new_action
+            time+=1
+            i+=1
+    
+        #print("Episode Length:\t",i)
+        #print(Theta)
+        if Ep%10 ==0 :
+            print("Episode:",Ep," Length:",i)
+    #print(Theta)
+    return Theta,tiling    
+
+
+
+
+
+
 #===============================================================================
 # random.seed(10)       
 # Theta,tiling=Q_learning(nb_episode=9000,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
