@@ -8,6 +8,7 @@
 #eclipse files
 *.pyproject
 *.DS_Store 
+*.project
 
 
 # pure fortran source files #
