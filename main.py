@@ -20,7 +20,7 @@ nb_episode=1000
 alpha=0.05
 eps=0.0
 gamma=1.0
-lmbda=0.0
+lmbda=1.0
 
 params={}
 
@@ -33,9 +33,9 @@ params.update(phys_params)
 params.update(RL_params)
       
  
-Theta,tiling=RL_QL(params,TO=False)
+Theta,tiling=RL_QL_time(params,TO=False)
 
-plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],[vmin,vmax,0.004],N_lintiles,N_tilings)
+#plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],[vmin,vmax,0.004],N_lintiles,N_tilings)
 
 exit()
 
