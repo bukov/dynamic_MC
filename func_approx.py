@@ -2,6 +2,7 @@ import numpy as np
 import numpy.random as random
 import pickle
 #random.seed(0)
+random.seed(0)
 
 def construct_tiling(N_dim,tile_per_dim,nb_of_tiling,range_per_dim):
     
@@ -59,6 +60,35 @@ def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
         indTheta.append(pos+current_pos)
         current_pos+=np.prod(tile_per_dim)
     return np.array(indTheta)
+
+
+def update_state_time(current_state,action,old_v):
+    
+    terminate=False
+    old_pos,old_time=current_state
+    
+    # Updating velocity:
+    new_velocity=old_v+0.001*(action-1)-0.0025*np.cos(3.*old_pos)
+    
+    # Maximum velocity ! (presence of friction)
+    if new_velocity < vmin:
+        new_velocity=vmin
+    elif new_velocity > vmax:
+        new_velocity=vmax
+    
+    # Updating position:
+    new_pos=old_pos+new_velocity
+    
+    if new_pos < xmin:
+        new_pos=xmin
+        new_velocity=0.0
+    elif new_pos > xmax:
+        terminate=True
+
+    # compute reward
+    R = -1.0
+    
+    return (new_pos,old_time+1),terminate,R
 
 def update_state(current_state,action):
     
@@ -363,4 +393,99 @@ def compute_performance_metrics(_params,method="RL_SARSA",file_save_pkl=None):
     return metric_info
 
 
+def RL_QL_time(params,TO=False):
+    """
+    functional approximation RL algorithm:
+    SARSA: False <--> use Q-Learning
+    TO: True <--> use True-Online Learning
+    """
+    
+    nb_episode=params['nb_episode']
+    max_t_steps=params['max_t_steps']
+    alpha=params['alpha']
+    eps=params['eps']
+    gamma=params['gamma']
+    lmbda=params['lmbda']
+    global xmin,xmax,vmin,vmax,N_actions
+    xmin=params['xmin']
+    xmax=params['xmax']
+    vmin=params['vmin']
+    vmax=params['vmax']
+    N_vars=1 #params['N_vars']
+    N_lintiles=params['N_lintiles']
+    N_tilings=params['N_tilings']
+    N_actions=params['N_actions']
+    state_i=params['state_i']
+    action_set=params['action_set']
+    
 
+    tiling=construct_tiling(N_vars,[N_lintiles],N_tilings,[[xmin,xmax]])
+    Theta=np.zeros((N_lintiles*N_tilings,max_t_steps,N_actions),dtype=np.float32)    
+
+    for Ep in range(nb_episode):
+        trace=np.zeros(Theta.shape,dtype=np.float32)
+        current_state_real=state_i
+
+        indTheta=real_to_tiling([current_state_real[0]],tiling,[N_lintiles],N_tilings)
+       
+        if random.uniform() < eps:
+    		action = random.randint(0,N_actions)
+    	else:
+    		action = np.argmax( np.sum(Theta[indTheta,0,:],axis=0) )
+
+        Q_old=[0.0,0.0,0.0]
+    
+        t_step=0
+        v_old=0.0
+        #print np.sum(Theta[real_to_tiling([current_state_real[0]],tiling,[N_lintiles],N_tilings),0,:],axis=0)
+        while t_step<max_t_steps or terminate:    
+        	
+        	# Take action
+        	new_state_real,terminate,R=update_state_time(current_state_real,action,v_old)
+        	indTheta_new=real_to_tiling([new_state_real[0]],tiling,[N_lintiles],N_tilings)
+
+        	Q = np.sum(Theta[indTheta,t_step,:],axis=0)
+        	new_Q = np.sum(Theta[indTheta_new,t_step,:],axis=0)
+
+        	if random.uniform() < eps:
+	    		new_action = random.randint(0,N_actions)
+	    	else:
+	    		new_action = np.argmax( np.sum(Theta[indTheta_new,t_step,:],axis=0) )
+        	
+        	action_star = np.argmax( np.sum(Theta[indTheta_new,t_step,:],axis=0) )
+
+        	if new_Q[new_action]==new_Q[action_star]:
+        		action_star=new_action
+
+        	if terminate:
+        		new_Q = [0.0,0.0,0.0]
+
+        	delta = R + gamma*new_Q[action_star] - Q[action]
+
+        	trace[indTheta,t_step,action]-=alpha*np.sum(trace[indTheta,t_step,action])
+        	trace*=gamma*lmbda
+        	trace+=1.0
+
+        	print action, new_action, action_star
+        	print new_Q[action_star], Q[action]
+        	print delta
+
+        	Theta += alpha*(delta + Q[action] - Q_old[action])*trace
+        	Theta[indTheta,t_step,action] -= alpha*(Q[action]-Q_old[action])
+
+        	if new_action != action_star:
+        		trace*=0.0
+
+        	
+        	v_old = new_state_real[0]-current_state_real[0]
+        	Q_old = new_Q
+        	indTheta = indTheta_new
+        	action = new_action
+        	current_state_real = new_state_real
+
+
+        	t_step+=1
+    	#exit()
+        if Ep%10 ==0 :
+            print("Episode:",Ep," Length:",t_step, " final position:", current_state_real[0])
+    return Theta,tiling
