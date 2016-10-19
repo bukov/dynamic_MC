@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from car_mountain_SARSA import *
+from func_approx import *
 from plotting import *
 
 action_set=[-1,0,1]
@@ -14,6 +14,8 @@ N_lintiles = 9
 N_tilings = 10
 N_actions = 3
 
+max_t_steps = 200
+
 nb_episode=1000
 alpha=0.05
 eps=0.0
@@ -21,30 +23,28 @@ gamma=1.0
 lmbda=0.0
 
 params={}
-params["nb_episode"]=nb_episode
-params["alpha"]=alpha
-params["eps"]=eps
-params["gamma"]=gamma
-params["lmbda"]=lmbda
-params["N_vars"]=N_vars
-params["N_lintiles"]=N_lintiles
-params["N_tilings"]=N_tilings
-params["N_actions"]=N_actions
-params["xmin"]=xmin
-params["xmax"]=xmax
-params["vmin"]=vmin
-params["vmax"]=vmax
-params["action_set"]=action_set
-params["state_i"]=state_i
+
+phys_params={"nb_episode":nb_episode,"alpha":alpha,"eps":eps,"gamma":gamma,"lmbda":lmbda,
+			 "N_vars":N_vars,"N_lintiles":N_lintiles,"N_tilings":N_tilings,"N_actions":N_actions,
+			 "action_set":action_set,"state_i":state_i,"max_t_steps":max_t_steps}
+RL_params={"xmin":xmin,"xmax":xmax,"vmin":vmin,"vmax":vmax}
+
+params.update(phys_params)
+params.update(RL_params)
       
  
-Theta,tiling=Q_learning(params)
+Theta,tiling=RL_QL(params,TO=False)
+
+plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],[vmin,vmax,0.004],N_lintiles,N_tilings)
+
+exit()
+
 pkl_file=open('data/SARSA_1000.pkl','wb')
 pickle.dump([Theta,tiling],pkl_file)
 exit()
 
 #===============================================================================
-# Theta,tiling=Q_learning_t(params)
+# Theta,tiling=SARSA_t(params)
 # pkl_file=open('data/SARSA_t_1000.pkl','wb')
 # pickle.dump([Theta,tiling],pkl_file)
 #  
@@ -54,11 +54,11 @@ exit()
 #===============================================================================
 
 #===============================================================================
-#  Theta,tiling=Q_learning_t(params)
+#  Theta,tiling=SARSA_t(params)
 #  pkl_file=open('data/SARSA_t_1000.pkl','wb')
 #  pickle.dump([Theta,tiling],pkl_file)
 #  exit(0)
-# Q,tiling=Q_learning_v2(params)
+# Q,tiling=SARSA_v2(params)
 # print(Q)
 # print(tiling)
 #  Saving data

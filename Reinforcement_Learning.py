@@ -7,7 +7,7 @@ random.seed()
 # define actions
 #pos_actions = [0.01,.05,0.1,0.15,0.2,0.5,1.0,1.5]
 #pos_actions=[0.02,0.05,0.08,0.1,0.2,0.4,0.8]
-pos_actions=[0.2]
+pos_actions=[1]
 def all_actions():
 	neg_actions=[]
 	[neg_actions.append(-i) for i in pos_actions]
@@ -26,6 +26,18 @@ def avail_actions(state,time_steps_left,hx_f,ind=False):
 		return av_actions
  
 
+def allmax(iterable, key=None):
+    "Return a list of all items equal to the max of the iterable."
+    result, maxval = [], None
+    key = key or (lambda x: x)
+    for x in iterable:
+        xval = key(x)
+        if not result or xval > maxval:
+            result, maxval = [x], xval
+        elif xval == maxval:
+            result.append(x)
+    return result 
+
 # define tilings
 def gen_tilings(Vars,dVars,N_tilings):
 	"""
@@ -41,8 +53,8 @@ def gen_tilings(Vars,dVars,N_tilings):
 	#tiling = np.array( [[i] for i in var0] )
 
 	#tilings = (tiling + np.random.uniform(0,dVars,len(Vars)) for j in xrange(N_tilings))
-	#tilings = [tiling + np.random.uniform(0,dVars,len(Vars)) for j in xrange(N_tilings)]
-	tilings = [tiling for j in xrange(N_tilings)]
+	tilings = [tiling + np.random.uniform(0,dVars,len(Vars)) for j in xrange(N_tilings)]
+	#tilings = [tiling for j in xrange(N_tilings)]
 
 	return tilings
 
