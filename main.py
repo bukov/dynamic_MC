@@ -31,7 +31,32 @@ RL_params={"xmin":xmin,"xmax":xmax,"vmin":vmin,"vmax":vmax}
 
 params.update(phys_params)
 params.update(RL_params)
-      
+#===============================================================================
+# 
+# nb_episode=10
+# Theta,tiling=RL_SARSA(params)
+# print(real_to_tiling((-0.9,0.01),tiling,[N_lintiles,N_lintiles],N_tilings))
+# exit()
+#===============================================================================
+
+#epoch_SARSA=plot_epoch(params,method="RL_SARSA")
+#pkl_file=open('data/epoch1.pkl','wb')
+#pickle.dump(epoch_SARSA,pkl_file)
+
+pkl_file=open('data/epoch1.pkl','rb')
+data=pickle.load(pkl_file)
+
+
+plt.plot(data)
+plt.show()
+
+
+
+print(data)
+exit()
+ 
+ 
+ 
  
 Theta,tiling=RL_QL(params,TO=False)
 
@@ -42,6 +67,27 @@ exit()
 pkl_file=open('data/SARSA_1000.pkl','wb')
 pickle.dump([Theta,tiling],pkl_file)
 exit()
+
+## EPOCH plots ###
+
+
+
+Theta,tiling=RL_SARSA(params)
+params['Theta']=Theta
+params['tiling']=tiling
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #===============================================================================
 # Theta,tiling=SARSA_t(params)
@@ -82,7 +128,7 @@ exit()
 
 #Qtable,tiling=pickle.load(pkl_file)
 
-plot_surface_action_max_LT(Qtable,tiling,(-1.2,0.5,0.02),(-0.07,0.07,0.002))
+#plot_surface_action_max_LT(Qtable,tiling,(-1.2,0.5,0.02),(-0.07,0.07,0.002))
 
 #trajectory=np.array(compute_trajectory_LT((0.3,0.),Qtable,tiling))#
 #print(trajectory)

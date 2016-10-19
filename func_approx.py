@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.random as random
+import pickle
 #random.seed(0)
 
 def construct_tiling(N_dim,tile_per_dim,nb_of_tiling,range_per_dim):
@@ -89,7 +90,7 @@ def update_state(current_state,action):
 
 def compute_trajectory(state_i,Theta,tiling):
     state=state_i
-    tile_per_dim,nb_of_tiling=np.shape(tiling[0])
+    nb_of_tiling,tile_per_dim=np.shape(tiling[0])
     trajectory=[]
     max_it=1000
     it=0
@@ -103,6 +104,14 @@ def compute_trajectory(state_i,Theta,tiling):
     
     while True:
         indTheta=real_to_tiling(state,tiling,[tile_per_dim,tile_per_dim],nb_of_tiling)
+        #=======================================================================
+        # print(state)
+        # print(tiling)
+        # print('N_lintiles',tile_per_dim)
+        # print('N_tilings',nb_of_tiling)
+        # print(indTheta)
+        # exit(0)
+        #=======================================================================
         Q=np.sum(Theta[indTheta,:],axis=0)
         action=np.argmax(Q)
         
@@ -139,8 +148,8 @@ def select_action(Theta,indTheta,eps):
 def RL_SARSA(params,TO=False):
     """
     functional approximation RL algorithm:
-    SARSA: False <--> use Q-Learning
     TO: True <--> use True-Online Learning
+    
     """
     
     nb_episode=params['nb_episode']
@@ -161,9 +170,14 @@ def RL_SARSA(params,TO=False):
     state_i=params['state_i']
     action_set=params['action_set']
     
-
-    tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
-    Theta=np.zeros((N_lintiles*N_lintiles*N_tilings,N_actions),dtype=np.float32)    
+    
+    
+    if 'Theta' in params:
+        Theta=params['Theta']
+        tiling=params['tiling']
+    else:        
+        tiling=construct_tiling(N_vars,[N_lintiles,N_lintiles],N_tilings,[[xmin,xmax],[vmin,vmax]])
+        Theta=np.zeros((N_lintiles*N_lintiles*N_tilings,N_actions),dtype=np.float32)    
 
     for Ep in range(nb_episode):
         trace=np.zeros(Theta.shape,dtype=np.float32)
@@ -288,3 +302,65 @@ def RL_QL(params,TO=False):
         if Ep%10 ==0 :
             print("Episode:",Ep," Length:",t_step)
     return Theta,tiling
+
+
+def compute_mean_Q(Theta,tiling,rangex,rangev):
+    '''
+    
+    Computes mean value of Q(s,a_max) over a grid
+    range is given in the following format [x_min,x_max,dx]
+
+    '''
+    
+    nb_of_tiling,tile_per_dim=np.shape(tiling[0])
+    mean=0.
+    n=0
+
+    for x in np.arange(rangex[0],rangex[1],rangex[2]):
+        for v in np.arange(rangev[0],rangev[1],rangev[2]):
+            indT=real_to_tiling((x,v), tiling, tile_per_dim, nb_of_tiling)
+            mean+=np.max(Theta[indT,:])
+            n+=1            
+    
+    return mean/n
+
+def compute_performance_metrics(_params,method="RL_SARSA",file_save_pkl=None):
+    '''
+    
+    Performance evaluation
+
+    '''
+    
+    state_i_test=[(-0.9,0.01),(-0.5,0.0),(0.3,0.01),(-0.5,0.06),(-1.15,0.01)]
+    N_sample=10
+    
+    #params=_params
+    
+    mean_reward=np.zeros(20)
+    mean_Q=np.zeros(20)
+    
+    for n in range(N_sample):
+        print('Sample number %d'%n)
+        pos=0
+        params={}
+        params.update(_params)
+        
+        for nb_episode in np.full(20,10,dtype=np.int):
+            params['nb_episode']=nb_episode
+            params['Theta'],params['tiling']=eval("RL_SARSA")(params)
+            for si in state_i_test:
+                trajectory=compute_trajectory(si,params['Theta'],params['tiling'])
+                mean_reward[pos]+=len(trajectory)
+            pos+=1   
+            mean_Q[pos]+=compute_mean_Q(params['Theta'],params['tiling'],[-1.2,0.5,0.02],[-0.07,0.07,0.01])
+    
+    metric_info=[mean_reward/(N_sample*len(state_i_test)),mean_Q]
+    
+    if file_save_pkl is not None:
+        pkl_file=open(file_save_pkl,'wb')    
+        pickle.dump(metric_info,pkl_file)
+            
+    return metric_info
+
+
+
