@@ -36,7 +36,6 @@ def find_closest_index(value,tiling):
     else:
         return pos-1+np.argmin([abs(tiling[pos-1]-value),abs(tiling[pos]-value)])
 
-
 def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
     # This should be optimized !
     
@@ -59,7 +58,6 @@ def real_to_tiling(state_real,tiling,tile_per_dim,nb_of_tiling):
         indTheta.append(pos+current_pos)
         current_pos+=np.prod(tile_per_dim)
     return np.array(indTheta)
-
 
 def update_state(current_state,action):
     
@@ -88,8 +86,6 @@ def update_state(current_state,action):
     R = -1.0
     
     return (new_pos,new_velocity),terminate,R
-
-
 
 def compute_trajectory(state_i,Theta,tiling):
     state=state_i
@@ -140,9 +136,8 @@ def select_action(Theta,indTheta,eps):
 
     return new_action,Q_new_action
             
-#print("voila")
   
-def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
+def SARSA(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     ''' SARSA
     alpha is the learning rate (for gradient descent)
     eps is the exploration rate
@@ -223,7 +218,7 @@ def Q_learning(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     return Theta,tiling
 
 
-# Used only for Q_learning_v2
+# Used only for SARSA_v2
 def real_to_discrete(state,tiling):
     tx,tv=tiling
     x,v=state
@@ -251,7 +246,7 @@ def compute_trajectory_LT(state_i,Qtable,tiling):
     
     return trajectory    
 
-def Q_learning_v2(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
+def SARSA_v2(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     ''' SARSA with look up table
     alpha is the learning rate (for gradient descent)
     eps is the exploration rate
@@ -434,7 +429,7 @@ def compute_trajectory_T(state_i,Theta,tiling):
     return trajectory
 
 
-def Q_learning_t(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
+def SARSA_TO(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
     ''' SARSA
     alpha is the learning rate (for gradient descent)
     eps is the exploration rate
@@ -525,7 +520,7 @@ def Q_learning_t(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
 
 #===============================================================================
 # random.seed(10)       
-# Theta,tiling=Q_learning(nb_episode=9000,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
+# Theta,tiling=SARSA(nb_episode=9000,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
 # resultfile = open('res9000.pkl', 'wb')
 # 
 # pickle.dump((Theta,tiling),resultfile)
@@ -535,7 +530,7 @@ def Q_learning_t(params,nb_episode=100,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9):
 # 
 # qvalue=[]
 # for Ep in [2000]:
-#     Theta,tiling=Q_learning(nb_episode=Ep,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
+#     Theta,tiling=SARSA(nb_episode=Ep,alpha=0.05,eps=0.1,gamma=1.0,lmbda=0.9)
 #     qvalue.append([Ep,select_action(Theta,real_to_tiling((-0.523599,0.0),tiling),0.0)[1]])
 #     print(qvalue)
 # 
