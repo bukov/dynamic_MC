@@ -72,6 +72,30 @@ def plot_trajectory_time(Theta,tiling):
     plt.legend(loc='upper left');
     plt.show()
     
+def plot_epoch():
+    '''
+    Performance evaluation
+    
+    '''
+    
+    state_i_test=[(-0.9,0.01),(-0.5,0.0),(0.3,0.01),(-0.5,0.07),(-1.15,0.01)]
+    N_sample=100
+    
+    mean_reward=np.zeros((np.arange(1,1000,40).shape[0],2))
+    
+    for n in range(N_sample):
+        pos=0
+        for episode in np.arange(1,1000,40):
+            Theta,tiling=Q_learning(episode,Theta,tiling)
+            for si in state_i_test:
+                compute_trajectory(si,Theta,tilng)
+                mean_reward[pos,1]+=len(compute_trajectory)
+            pos+=1   
+
+    mean_reward[:,0]=np.arange(1,1000,40)
+    return mean_reward/(N_sample*len(state_i_test))    
+    
+
     
     
 #===============================================================================
