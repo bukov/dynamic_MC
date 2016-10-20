@@ -4,20 +4,20 @@ from func_approx import *
 from plotting import *
 
 action_set=[-1,0,1]
-state_i = (0.3,0.0) #(-0.523599,0.0)
+state_i = (0.4,0.0) #(-0.523599,0.0)
 
 xmin, xmax = -1.2, 0.5
 vmin, vmax = -0.07, 0.07
 
-N_vars=2
-N_lintiles = 9
-N_tilings = 10
+N_vars=1
+N_lintiles = 40 # 40
+N_tilings = 200 # 200
 N_actions = 3
 
-max_t_steps = 200
+max_t_steps = 30 # 30
 
-nb_episode=1000
-alpha=0.05
+nb_episode=2500 # 2000
+alpha=0.5/N_tilings
 eps=0.0
 gamma=1.0
 lmbda=1.0
@@ -31,6 +31,11 @@ RL_params={"xmin":xmin,"xmax":xmax,"vmin":vmin,"vmax":vmax}
 
 params.update(phys_params)
 params.update(RL_params)
+
+Theta,tiling=RL_QL_time(params)
+
+exit()
+
 #===============================================================================
 # 
 # nb_episode=10
