@@ -318,7 +318,6 @@ def RL_SARSA(params,TO=False):
     return Theta,tiling
 
 
-
 def RL_Q(params,TO=False):
     """
     functional approximation RL algorithm:
