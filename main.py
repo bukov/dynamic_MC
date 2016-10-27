@@ -14,17 +14,21 @@ N_lintiles = 9 # 40
 N_tilings = 20 # 200
 N_actions = 3
 
-max_t_steps = 50 # 30
+max_t_steps = 32 # 30
 
-nb_episode=4000
-alpha=0.5/N_tilings
-eps=0.0
+nb_episode=10000
+alpha=0.5 # alpha or long-time alpha in the U case
+alpha_0=0.4 # initial alpha at beginning of each episode
+eta=alpha
+beta=0.9
+zeta=0.8
+eps=0.1
 gamma=1.0
 lmbda=0.6
 
 params={}
 
-phys_params={"nb_episode":nb_episode,"alpha":alpha,"eps":eps,"gamma":gamma,"lmbda":lmbda,
+phys_params={"nb_episode":nb_episode,"zeta":zeta,"alpha":alpha,"alpha_0":alpha_0,'beta':beta,'eta':eta,"eps":eps,"gamma":gamma,"lmbda":lmbda,
 			 "N_vars":N_vars,"N_lintiles":N_lintiles,"N_tilings":N_tilings,"N_actions":N_actions,
 			 "action_set":action_set,"state_i":state_i,"max_t_steps":max_t_steps}
 RL_params={"xmin":xmin,"xmax":xmax,"vmin":vmin,"vmax":vmax}
@@ -32,11 +36,16 @@ RL_params={"xmin":xmin,"xmax":xmax,"vmin":vmin,"vmax":vmax}
 params.update(phys_params)
 params.update(RL_params)
 
-Theta,tiling=RL_Q_time(params)
-plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],N_lintiles,N_tilings)
+#Theta,tiling=RL_Q_time(params)
+#plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],N_lintiles,N_tilings)
 
 #Theta,tiling=RL_Q(params)
-#plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],[vmin,vmax,0.004],N_lintiles,N_tilings)
+#Theta,tiling=RL_Q_TO(params)
+#Theta,tiling=RL_Q_U(params)
+#Theta,tiling=RL_Q_U_TO(params)
+#Theta,tiling=RL_Q_WIS_TO_GTD(params)
+Theta,tiling=RL_ABQ(params)
+plot_surface_action_max(Theta,tiling,[xmin,xmax,0.03],[vmin,vmax,0.004],N_lintiles,N_tilings)
 exit()
 
 #===============================================================================
